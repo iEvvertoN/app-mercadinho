@@ -71,8 +71,13 @@ class CatalogApiService {
 
   static String baseUrl = initialBaseUrl;
 
+  static String? customBaseUrl;
+
   static List<String> get candidateUrls {
     final list = <String>[];
+    if (customBaseUrl != null && customBaseUrl!.trim().isNotEmpty) {
+      list.add(customBaseUrl!.trim());
+    }
     if (kIsWeb) {
       try {
         final origin = Uri.base.origin;
@@ -82,10 +87,11 @@ class CatalogApiService {
       } catch (_) {}
     }
     const fallbacks = [
+      'http://192.168.101.72:3333',
       'http://127.0.0.1:3333',
-      'http://192.168.101.6:3333',
       'http://100.75.105.40:3333',
       'http://192.168.101.51:3333',
+      'http://192.168.101.6:3333',
     ];
     for (final f in fallbacks) {
       if (!list.contains(f)) list.add(f);

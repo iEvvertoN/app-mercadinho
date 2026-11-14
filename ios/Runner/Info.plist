@@ -49,5 +49,14 @@
 	<string>O aplicativo precisa de acesso à câmera para leitura de códigos de barras dos produtos.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>O aplicativo precisa de acesso à localização para cálculo de frete e entregas.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>O aplicativo conecta ao servidor do ERP na rede Wi-Fi local para carregar os produtos e sincronizar pedidos.</string>
 </dict>
 </plist>
