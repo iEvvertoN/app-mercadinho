@@ -1,0 +1,25 @@
+{
+    "sports_active_leagues": {
+        "page": {
+            "title": "Palpite premiado",
+            "subtitle": "Dê seus palpites para concorrer \na prêmios!",
+            "label_league_duration": "Duração da liga:",
+            "label_btn_view_rounds": "Ver rodadas",
+            "label_btn_rules": "Regulamento"
+        },
+        "leagues": [
+            {
+                "id": 1,
+                "name": "Liga Heineken Super Zeus - Champions League",
+                "image": "https://www.premioquality.com/assets/images/data-show-2021-fundos-1-1400x789.png",
+                "duration_text": "<p><strong>09/02/2026</strong> até <strong>08/03/2026</strong></p>"
+            },
+            {
+                "id": 1,
+                "name": "Liga Heineken Super Zeus - Champions League",
+                "image": "https://www.tuneis.org.br/wp-content/uploads/2019/11/PremioFigueiredoFerraz-medalha-interna-1200x800_c.jpg",
+                "duration_text": "<p><strong>09/02/2026</strong> até <strong>08/03/2026</strong></p>"
+            }
+        ]
+    }
+}

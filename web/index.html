@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="Aplicativo Oficial do Mercadinho - E-commerce e Clube de Vantagens">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="app_mercadinho">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>App do Mercadinho • Casa de Vó</title>
+  <link rel="manifest" href="manifest.json">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(regs) {
+        for (let r of regs) r.unregister();
+      });
+    }
+    if ('caches' in window) {
+      caches.keys().then(function(names) {
+        for (let n of names) caches.delete(n);
+      });
+    }
+  </script>
+
+  <!-- Motores de Leitura de Código de Barras 1D/2D (EAN-13, EAN-8, UPC, Code128, QR) -->
+  <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.15/dist/index.js"></script>
+
+  <script>
+    window.MercadinhoWebScanner = {
+      activeStream: null,
+      zxingReader: null,
+      scanInterval: null,
+      isRunning: false,
+      audioCtx: null,
+
+      _ensureAudioCtx: function() {
+        try {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (!AudioCtx) return null;
+          if (!this.audioCtx) {
+            this.audioCtx = new AudioCtx();
+          }
+          if (this.audioCtx.state === 'suspended') {
+            this.audioCtx.resume();
+          }
+          return this.audioCtx;
+        } catch (_) {
+          return null;
+        }
+      },
+
+      playBeep: function() {
+        try {
+          if (navigator.vibrate) navigator.vibrate(55);
+          const ctx = this._ensureAudioCtx();
+          if (!ctx) return;
+          const now = ctx.currentTime;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(2650, now);
+          gain.gain.setValueAtTime(0.32, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.095);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.1);
+        } catch (_) {}
+      },
+
+      playErrorBeep: function() {
+        try {
+          if (navigator.vibrate) navigator.vibrate([80, 50, 120]);
+          const ctx = this._ensureAudioCtx();
+          if (!ctx) return;
+          const now = ctx.currentTime;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(340, now);
+          osc.frequency.setValueAtTime(260, now + 0.12);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.27);
+        } catch (_) {}
+      },
+
+      stop: function() {
+        this.isRunning = false;
+        if (this.scanInterval) {
+          clearInterval(this.scanInterval);
+          this.scanInterval = null;
+        }
+        if (this.zxingReader) {
+          try { this.zxingReader.reset(); } catch (_) {}
+          this.zxingReader = null;
+        }
+        if (this.activeStream) {
+          try {
+            this.activeStream.getTracks().forEach(t => t.stop());
+          } catch (_) {}
+          this.activeStream = null;
+        }
+      },
+
+      setTorch: async function(enabled) {
+        if (!this.activeStream) return false;
+        try {
+          const track = this.activeStream.getVideoTracks()[0];
+          if (!track) return false;
+          await track.applyConstraints({ advanced: [{ torch: !!enabled }] });
+          return true;
+        } catch (e) {
+          return false;
+        }
+      },
+
+      decodeImageFile: async function(file, onResult, onError) {
+        try {
+          if ('BarcodeDetector' in window) {
+            const bitmap = await createImageBitmap(file);
+            const detector = new BarcodeDetector({
+              formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'itf', 'qr_code']
+            });
+            const codes = await detector.detect(bitmap);
+            if (codes && codes.length > 0 && codes[0].rawValue) {
+              onResult(codes[0].rawValue);
+              return;
+            }
+          }
+          if (window.ZXing) {
+            const url = URL.createObjectURL(file);
+            const reader = new ZXing.BrowserMultiFormatReader();
+            const res = await reader.decodeFromImageUrl(url);
+            URL.revokeObjectURL(url);
+            if (res && res.getText()) {
+              onResult(res.getText());
+              return;
+            }
+          }
+          onError('Não foi possível identificar o código de barras na foto. Tente aproximar mais das barras.');
+        } catch (err) {
+          onError('Código não identificado na imagem. Tente focar bem nas barras.');
+        }
+      },
+
+      start: async function(videoElement, onResult, onStatusChange) {
+        this.stop();
+        this.isRunning = true;
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          onStatusChange('INSECURE_CONTEXT', 'O navegador bloqueou a câmera porque a página não está em HTTPS. Use o botão "Ler pela Câmera Nativa" abaixo ou acesse via https://192.168.101.51:8443');
+          return;
+        }
+
+        try {
+          onStatusChange('STARTING', 'Solicitando permissão da câmera traseira...');
+          const constraints = {
+            audio: false,
+            video: {
+              facingMode: { ideal: 'environment' },
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            }
+          };
+
+          const stream = await navigator.mediaDevices.getUserMedia(constraints);
+          if (!this.isRunning) {
+            stream.getTracks().forEach(t => t.stop());
+            return;
+          }
+
+          this.activeStream = stream;
+          videoElement.srcObject = stream;
+          videoElement.setAttribute('playsinline', 'true');
+          videoElement.muted = true;
+          await videoElement.play();
+
+          onStatusChange('ACTIVE', 'Câmera ativa! Aponte para o código de barras (EAN-13 / EAN-8).');
+
+          // Tenta ativar foco contínuo se o celular suportar
+          try {
+            const track = stream.getVideoTracks()[0];
+            const caps = track.getCapabilities ? track.getCapabilities() : {};
+            if (caps.focusMode && caps.focusMode.includes('continuous')) {
+              await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+            }
+          } catch (_) {}
+
+          // Motor 1: BarcodeDetector nativo do Chrome Android (acelerado por hardware)
+          let nativeDetector = null;
+          if ('BarcodeDetector' in window) {
+            try {
+              nativeDetector = new BarcodeDetector({
+                formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'itf', 'qr_code']
+              });
+            } catch (_) {}
+          }
+
+          // Motor 2: ZXing MultiFormat (fallback universal para iOS Safari / Firefox / Chrome)
+          if (window.ZXing) {
+            try {
+              this.zxingReader = new ZXing.BrowserMultiFormatReader();
+              this.zxingReader.decodeFromStream(stream, videoElement, (result, err) => {
+                if (this.isRunning && result && result.getText()) {
+                  onResult(result.getText());
+                }
+              });
+            } catch (_) {}
+          }
+
+          // Loop de alta frequência com BarcodeDetector nativo (150ms)
+          if (nativeDetector) {
+            this.scanInterval = setInterval(async () => {
+              if (!this.isRunning || videoElement.readyState < 2) return;
+              try {
+                const barcodes = await nativeDetector.detect(videoElement);
+                if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
+                  onResult(barcodes[0].rawValue);
+                }
+              } catch (_) {}
+            }, 150);
+          }
+        } catch (err) {
+          const msg = err && err.message ? err.message : String(err);
+          onStatusChange('ERROR', 'Permissão de câmera negada ou indisponível (' + msg + '). Toque em "Tentar Abrir Câmera" ou use a Câmera Instantânea.');
+        }
+      }
+    };
+  </script>
+</head>
+<body>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

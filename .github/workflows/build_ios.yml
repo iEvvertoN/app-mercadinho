@@ -1,0 +1,57 @@
+name: Build iOS IPA (No-Codesign)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  build-ios:
+    name: Build iOS IPA on macOS
+    runs-on: macos-14
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: 'stable'
+          cache: true
+
+      - name: Build iOS Application (Release, No Codesign)
+        run: |
+          if [ -d "app_mercadinho" ]; then
+            cd app_mercadinho
+          fi
+          flutter pub get
+          flutter build ios --release --no-codesign
+
+      - name: Package Runner.app into .ipa
+        run: |
+          if [ -d "app_mercadinho" ]; then
+            cd app_mercadinho
+          fi
+          mkdir -p build/ios/iphoneos/Payload
+          cp -r build/ios/iphoneos/Runner.app build/ios/iphoneos/Payload/
+          cd build/ios/iphoneos
+          zip -r AppMercadinho.ipa Payload
+          ls -lh AppMercadinho.ipa
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AppMercadinho-iOS-IPA
+          path: |
+            **/build/ios/iphoneos/AppMercadinho.ipa
+            **/AppMercadinho.ipa
+          retention-days: 14

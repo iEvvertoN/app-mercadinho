@@ -1,0 +1,25 @@
+{
+    "sports_finished_leagues": {
+        "page": {
+            "title": "Palpite premiado",
+            "subtitle": "Confira as ligas finalizadas!",
+            "label_league_duration": "Duração da liga:",
+            "label_btn_view_rounds": "Ver rodadas finalizadas",
+            "label_btn_rules": "Regulamento"
+        },
+        "leagues": [
+            {
+                "id": 1,
+                "name": "Liga Heineken Super Zeus - Champions League",
+                "image": "https://blog.emania.com.br/wp-content/uploads/2015/08/Maiores-pr%C3%AAmios-fotografia-eMania-Post-4-03-08.jpg",
+                "duration_text": "<p><strong>09/02/2026</strong> até <strong>08/03/2026</strong></p>"
+            },
+            {
+                "id": 1,
+                "name": "Liga Heineken Super Zeus - Champions League",
+                "image": "https://admin.cnnbrasil.com.br/wp-content/uploads/sites/12/2025/12/Poster-oficial-do-premio-Multishow-2025.jpg?w=1200&h=900&crop=0",
+                "duration_text": "<p><strong>09/02/2026</strong> até <strong>08/03/2026</strong></p>"
+            }
+        ]
+    }
+}

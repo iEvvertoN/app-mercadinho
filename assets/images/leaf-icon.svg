@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 45 45">
+  <g id="leaf-sqaure" transform="translate(0 -0.4)">
+    <g id="Grupo_3568" data-name="Grupo 3568" transform="translate(5.675 5.675)">
+      <path id="Caminho_8222" data-name="Caminho 8222" d="M14.859,8.369h0a6.869,6.869,0,0,0,0,13.737c5.6,0,6.969-6.871,10.175-8.7h0A12.506,12.506,0,0,0,14.859,8.369Z" transform="translate(1.449 1.787)" fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+      <path id="Caminho_8223" data-name="Caminho 8223" d="M27.592,37.05H12.458A9.458,9.458,0,0,1,3,27.592H3V12.458H3A9.458,9.458,0,0,1,12.458,3H27.592a9.458,9.458,0,0,1,9.458,9.458V27.592h0A9.458,9.458,0,0,1,27.592,37.05Z" transform="translate(-3 -3)" fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+      <path id="Caminho_8224" data-name="Caminho 8224" d="M16.446,11.6h0a13.681,13.681,0,0,0-9.307,6.184" transform="translate(0.691 4.673)" fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+    </g>
+    <rect id="Retângulo_2897" data-name="Retângulo 2897" transform="translate(0 0.4)" fill="none"/>
+  </g>
+</svg>

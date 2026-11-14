@@ -1,0 +1,8 @@
+<svg id="share" xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60">
+  <g id="Grupo_3650" data-name="Grupo 3650" transform="translate(7.5 7.5)">
+    <path id="Caminho_8629" data-name="Caminho 8629" d="M12,38V3" transform="translate(10.5 -3)" fill="none" stroke="#005290" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+    <path id="Caminho_8630" data-name="Caminho 8630" d="M24,10.5,16.5,3,9,10.5" transform="translate(6 -3)" fill="none" stroke="#005290" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+    <path id="Caminho_8631" data-name="Caminho 8631" d="M15.5,10H8a5,5,0,0,0-5,5V32.5a5,5,0,0,0,5,5H43a5,5,0,0,0,5-5V15a5,5,0,0,0-5-5H35.5" transform="translate(-3 7.5)" fill="none" stroke="#005290" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+  </g>
+  <path id="Caminho_8632" data-name="Caminho 8632" d="M0,0H60V60H0Z" fill="none"/>
+</svg>
