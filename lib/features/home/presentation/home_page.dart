@@ -70,6 +70,62 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> _showServerConfigDialog() async {
+    final controller = TextEditingController(
+      text: CatalogApiService.customBaseUrl ?? CatalogApiService.baseUrl,
+    );
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Conexão com Servidor ERP'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Informe o IP ou URL do servidor do ERP na mesma rede Wi-Fi (ex: 192.168.0.102 ou http://192.168.0.102:3333):',
+              style: TextStyle(fontSize: 12),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.url,
+              decoration: const InputDecoration(
+                labelText: 'IP ou URL do Servidor',
+                hintText: '192.168.0.102',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+            if (CatalogApiService.lastConnectionError != null) ...[
+              const SizedBox(height: 10),
+              Text(
+                'Último diagnóstico:\n${CatalogApiService.lastConnectionError}',
+                style: const TextStyle(fontSize: 10, color: Colors.redAccent),
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              await CatalogApiService.setCustomBaseUrl(controller.text);
+              if (ctx.mounted) Navigator.of(ctx).pop();
+              await _syncCatalogFromErp();
+            },
+            child: const Text('Salvar e Conectar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppStateController>();
@@ -128,6 +184,15 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                       const Icon(Icons.refresh_rounded, size: 15, color: Color(0xFF059669)),
+                      const SizedBox(width: 8),
+                      InkWell(
+                        onTap: _showServerConfigDialog,
+                        borderRadius: BorderRadius.circular(6),
+                        child: const Padding(
+                          padding: EdgeInsets.all(2),
+                          child: Icon(Icons.settings_ethernet_rounded, size: 16, color: Color(0xFF059669)),
+                        ),
+                      ),
                     ],
                   ),
                 ),

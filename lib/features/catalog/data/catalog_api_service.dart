@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../domain/models/category_model.dart';
 import '../domain/models/product_model.dart';
 import 'mock_catalog_data.dart';
@@ -72,6 +74,44 @@ class CatalogApiService {
   static String baseUrl = initialBaseUrl;
 
   static String? customBaseUrl;
+  static String? lastConnectionError;
+  static const String _prefKeyBaseUrl = 'erp_custom_base_url';
+
+  static String normalizeServerUrl(String raw) {
+    var v = raw.trim();
+    if (v.isEmpty) return '';
+    if (!v.startsWith('http://') && !v.startsWith('https://')) {
+      v = 'http://$v';
+    }
+    final uri = Uri.tryParse(v);
+    if (uri != null && !uri.hasPort && v.startsWith('http://')) {
+      v = '${uri.scheme}://${uri.host}:3333';
+    }
+    return v.replaceAll(RegExp(r'/+$'), '');
+  }
+
+  static Future<void> loadSavedBaseUrl() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString(_prefKeyBaseUrl);
+      if (saved != null && saved.trim().isNotEmpty) {
+        customBaseUrl = normalizeServerUrl(saved);
+      }
+    } catch (_) {}
+  }
+
+  static Future<void> setCustomBaseUrl(String raw) async {
+    final normalized = normalizeServerUrl(raw);
+    customBaseUrl = normalized.isEmpty ? null : normalized;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (customBaseUrl == null) {
+        await prefs.remove(_prefKeyBaseUrl);
+      } else {
+        await prefs.setString(_prefKeyBaseUrl, customBaseUrl!);
+      }
+    } catch (_) {}
+  }
 
   static List<String> get candidateUrls {
     final list = <String>[];
@@ -87,9 +127,10 @@ class CatalogApiService {
       } catch (_) {}
     }
     const fallbacks = [
+      'http://192.168.0.102:3333',
       'http://192.168.101.72:3333',
-      'http://127.0.0.1:3333',
       'http://100.75.105.40:3333',
+      'http://127.0.0.1:3333',
       'http://192.168.101.51:3333',
       'http://192.168.101.6:3333',
     ];
@@ -103,9 +144,46 @@ class CatalogApiService {
   static bool isConnectedToErp = false;
   static int totalErpProductsCount = 0;
 
+  static Future<String?> _probeReachableBaseUrl() async {
+    final candidates = candidateUrls;
+    final completer = Completer<String?>();
+    int pending = candidates.length;
+    if (pending == 0) return null;
+
+    for (final candidate in candidates) {
+      http.get(Uri.parse('$candidate/')).timeout(const Duration(seconds: 3)).then((res) {
+        if (res.statusCode == 200 && !completer.isCompleted) {
+          completer.complete(candidate);
+        }
+      }).catchError((err) {
+        lastConnectionError = '$candidate: $err';
+      }).whenComplete(() {
+        pending--;
+        if (pending == 0 && !completer.isCompleted) {
+          completer.complete(null);
+        }
+      });
+    }
+    return completer.future;
+  }
+
   /// Carrega os dados da Home e o catálogo completo do ERP (`CLIPP.FDB`)
   static Future<ErpHomeCatalogPayload?> syncWithErp({bool includeInactive = false}) async {
-    for (final candidate in candidateUrls) {
+    await loadSavedBaseUrl();
+    lastConnectionError = null;
+
+    final orderedCandidates = <String>[];
+    final fastest = await _probeReachableBaseUrl();
+    if (fastest != null) {
+      orderedCandidates.add(fastest);
+    }
+    for (final c in candidateUrls) {
+      if (!orderedCandidates.contains(c)) {
+        orderedCandidates.add(c);
+      }
+    }
+
+    for (final candidate in orderedCandidates) {
       try {
         debugPrint('[CatalogApiService] Tentando sincronizar com ERP em: $candidate');
         final homeUri = Uri.parse(
@@ -116,8 +194,8 @@ class CatalogApiService {
         );
 
         final responses = await Future.wait([
-          http.get(homeUri).timeout(const Duration(seconds: 10)),
-          http.get(catalogUri).timeout(const Duration(seconds: 15)),
+          http.get(homeUri).timeout(const Duration(seconds: 20)),
+          http.get(catalogUri).timeout(const Duration(seconds: 25)),
         ]);
 
         final homeRes = responses[0];
